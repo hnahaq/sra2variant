@@ -32,61 +32,6 @@ class TestWorkFlow(unittest.TestCase):
 
     # def test_SE_workflow(self):
     #     sra_id = "ERR4238190"
-    #     sra_file = _FileArtifacts(
-    #         file_path=(os.path.join(DATA_DIR, f"{sra_id}.sra"), ),
-    #         cwd=os.path.join(self.output_dir, sra_id),
-    #         working_id=sra_id,
-    #         res_dir=self.csv_dir
-    #     )
-    #     if sra_file.exist():
-    #         fq_dump = FastqDumpWrapper(sra_file)
-    #         fastq_files = fq_dump.execute_cmd()
-    #         self.assertTrue(fastq_files.exist(),
-    #                         "SE fastq-dump failed")
-
-    #         TrimmomaticWrapper.set_exec_args(("SLIDINGWINDOW:4:0", ))
-    #         trimmomatic = TrimmomaticWrapper(fastq_files)
-    #         fastq_files = trimmomatic.execute_cmd()
-    #         self.assertTrue(fastq_files.exist(),
-    #                         "SE trimmomatic failed")
-
-    #         refSeq_file = _FileArtifacts(
-    #             (os.path.join(DATA_DIR, "SARS-CoV-2_refSeq.fasta"),),
-    #             cwd=DATA_DIR,
-    #             working_id="SARS-CoV-2_refSeq"
-    #         )
-
-    #         ht2_build = Hisat2BuildWrapper(refSeq_file)
-    #         ht2_build.execute_cmd()
-    #         Hisat2Wrapper.set_exec_args(("--no-spliced-alignment", "--no-unal"))
-    #         Hisat2Wrapper.set_base_index(ht2_build)
-    #         hisat2 = Hisat2Wrapper(fastq_files)
-    #         bam_files = hisat2.execute_cmd()
-
-    #         mpileup = BCFtoolsMpileupWrapper(bam_files, refSeq_file)
-    #         print(mpileup)
-    #         mpileup_file = mpileup.execute_cmd()
-    #         self.assertIsNotNone(mpileup_file, "PE BCFtools mpileup failed")
-    #         bcf_norm = BCFtoolsNormWrapper(mpileup_file, refSeq_file)
-    #         print(bcf_norm)
-    #         vcf_file = bcf_norm.execute_cmd()
-    #         self.assertIsNotNone(vcf_file, "PE BCFtools norm failed")
-
-    #         bt2_build = Bowtie2BuildWrapper(refSeq_file)
-    #         bt2_build.execute_cmd()
-    #         Bowtie2Wrapper.set_base_index(bt2_build)
-    #         bowtie2 = Bowtie2Wrapper(fastq_files)
-    #         bam_files = bowtie2.execute_cmd()
-
-
-    #         lofreq_IQ = LoFreqIndelQualWrapper(bam_files, refSeq_file)
-    #         print(lofreq_IQ)
-    #         bam_files = lofreq_IQ.execute_cmd()
-    #         self.assertIsNotNone(bam_files, "PE LoFreq indelqual failed")
-    #         lofreq_call = LoFreqCallWrapper(bam_files, refSeq_file)
-    #         print(lofreq_call)
-    #         vcf_file = lofreq_call.execute_cmd()
-    #         self.assertIsNotNone(vcf_file, "PE LoFreq call failed")
 
     def test_PE_workflow(self):
         CMDwrapperBase.set_threads(cpu_count())

@@ -3,11 +3,10 @@
 
 ## Installation
 
-Download the repository from GitHub, `unzip` the file and `cd` into the directory. Use the following command to install
+Use the following command to install
 
 ```bash
 conda env update --file environment.yml
-pip install .
 ```
 
 ## Quickstart
@@ -16,6 +15,8 @@ Download the reference genome in `fasta` format and `sra` files.
 
 To use pipeline for WGS paired end reads
 ```bash
+conda activate sra2variant
+
 sra2variant-WGS-PE -i /path/to/sra_dir/ -r ./refSeq/SARS-CoV-2_refSeq.fasta
 ```
 
