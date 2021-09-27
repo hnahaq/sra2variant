@@ -1,0 +1,20 @@
+name: sra2variant
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - sra-tools
+  - trimmomatic
+  - fastp
+  - bwa
+  - bowtie2
+  - hisat2
+  - picard
+  - lofreq
+  - bcftools
+  - python>=3.7
+  - pip
+  - pyvcf
+  - pysam
+  - numpy
