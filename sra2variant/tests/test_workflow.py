@@ -2,16 +2,9 @@ import os
 import glob
 import shutil
 import unittest
-from functools import partial
-from multiprocessing import Pool, cpu_count
 
 from sra2variant import WGS_PE
-from sra2variant.pipeline.cmd_wrapper import CMDwrapperBase
 from sra2variant.pipeline.sra2fastq import PrefetchWrapper
-from sra2variant.pipeline.reads_mapping import (
-    BWAindexWrapper,
-    BWAmemWrapper,
-)
 
 THIS_DIR = os.path.dirname(__file__)
 DATA_DIR = os.path.join(THIS_DIR, os.pardir, "data")
@@ -22,7 +15,7 @@ class TestWorkFlow(unittest.TestCase):
     def setUp(self):
         if os.path.exists(TEMP_DIR):
             shutil.rmtree(TEMP_DIR)
-        self.refSeq_file = os.path.join(DATA_DIR, "SARS-CoV-2_refSeq.fasta")
+        self.refSeq_file = os.path.join(DATA_DIR, "NC_045512.2.fasta")
         self.output_dir = os.path.join(TEMP_DIR, "output")
         self.csv_dir = os.path.join(TEMP_DIR, "csv")
         if not os.path.exists(self.output_dir):
@@ -34,28 +27,25 @@ class TestWorkFlow(unittest.TestCase):
     #     sra_id = "ERR4238190"
 
     def test_PE_workflow(self):
-        CMDwrapperBase.set_threads(cpu_count())
         sra_id = "ERR4989943"
         sra_file = os.path.join(DATA_DIR, f"{sra_id}.sra")
-        refSeq_file = os.path.join(DATA_DIR, "SARS-CoV-2_refSeq.fasta")
         if not os.path.exists(sra_file):
             prefetch = PrefetchWrapper(sra_id, DATA_DIR)
-            print(prefetch)
             prefetch.execute_cmd()
-        bwaindex = BWAindexWrapper(refSeq_file)
-        BWAmemWrapper.set_base_index(bwaindex)
-        workflow2 = partial(
-            WGS_PE.workflow,
-            output_dir=self.output_dir,
-            csv_dir=self.csv_dir,
+
+        WGS_PE.run_workflow(
+            self.refSeq_file,
+            [sra_file],
+            self.output_dir,
+            self.csv_dir,
+            cores=2,
+            threads=os.cpu_count()
         )
-        with Pool(2) as p:
-            p.map(workflow2, [sra_file])
+        
         os.remove(sra_file)
 
-
     def tearDown(self):
-        for fn in glob.glob(os.path.join(DATA_DIR, "SARS-CoV-2_refSeq.fasta.*")):
+        for fn in glob.glob(os.path.join(DATA_DIR, "NC_045512.2.fasta.*")):
             os.remove(fn)
         if os.path.exists(TEMP_DIR):
             shutil.rmtree(TEMP_DIR)

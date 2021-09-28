@@ -2,7 +2,6 @@ import os
 import sys
 import glob
 import argparse
-from functools import partial
 from multiprocessing import Pool, cpu_count
 
 from sra2variant.pipeline.cmd_wrapper import _FileArtifacts, CMDwrapperBase
@@ -18,10 +17,34 @@ from sra2variant.pipeline.variant_calling import (
     LoFreqIndelQualWrapper,
     LoFreqCallWrapper
 )
+from sra2variant.vcfparser.vcf2csv import vcf2csv
 from sra2variant import __version__
 
 
-def workflow(
+def run_workflow(
+    refSeq_file: str,
+    sra_files: tuple,
+    output_dir: str,
+    csv_dir: str,
+    cores: int,
+    threads: int
+):
+    fasta_file = _FileArtifacts(
+        (refSeq_file, ),
+        cwd=os.path.dirname(refSeq_file),
+        working_id=os.path.basename(refSeq_file)
+    )
+    if not fasta_file.exist():
+        raise FileNotFoundError(f"Reference genome {refSeq_file} not found")
+    bwa_index = BWAindexWrapper(fasta_file)
+    BWAmemWrapper.set_base_index(bwa_index)
+    CMDwrapperBase.set_threads(threads)
+
+    with Pool(cores) as p:
+        p.starmap(__workflow, ((fn, output_dir, csv_dir) for fn in sra_files))
+
+
+def __workflow(
     sra_file: str,
     output_dir: str,
     csv_dir: str,
@@ -36,22 +59,23 @@ def workflow(
         res_dir=csv_dir
     )
     if sra_file.result_exists():
-        print(f"Result of {sra_file} already exists in {sra_file.result_file()}")
+        print(f"Result for {sra_file} exists in {sra_file.result_file()}")
         return None
     sra_file.create_cwd()
     fastq_files = FastqDumpWrapper(sra_file).execute_cmd()
     if len(fastq_files) != 2:
+        print(f"{sra_file} doesn't contain paired end reads")
         return None
     fastq_files = FastpWrapper(fastq_files).execute_cmd()
     bam_files = BWAmemWrapper(fastq_files).execute_cmd()
 
-    refSeq_file = BWAmemWrapper.refSeq_file
+    refSeq_file = BWAmemWrapper.bwa_index.output_files
 
     bam_files = PicardMarkDuplicatedWrapper(bam_files).execute_cmd()
     bam_files = LoFreqViterbiWraper(bam_files, refSeq_file).execute_cmd()
     bam_files = LoFreqIndelQualWrapper(bam_files, refSeq_file).execute_cmd()
     vcf_files = LoFreqCallWrapper(bam_files, refSeq_file).execute_cmd()
-    del vcf_files
+    vcf2csv(vcf_files)
 
 
 def main(sysargs=sys.argv[1:]):
@@ -116,13 +140,4 @@ def main(sysargs=sys.argv[1:]):
         sra_files = glob.glob(os.path.join(sra_dir, f"*.{sra_ext}"))
     print("Number of sra file to process", len(sra_files))
 
-    CMDwrapperBase.set_threads(threads)
-    bwaindex = BWAindexWrapper(refSeq_file)
-    BWAmemWrapper.set_base_index(bwaindex)
-    workflow2 = partial(
-        workflow,
-        output_dir=output_dir,
-        csv_dir=csv_dir,
-    )
-    with Pool(cores) as p:
-        p.map(workflow2, sra_files)
+    run_workflow(refSeq_file, sra_files, output_dir, csv_dir, cores, threads)

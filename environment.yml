@@ -4,7 +4,7 @@ channels:
   - bioconda
   - defaults
 dependencies:
-  - sra-tools
+  - sra-tools>=2.11.0
   - trimmomatic
   - fastp
   - bwa
@@ -18,5 +18,6 @@ dependencies:
   - pyvcf
   - pysam
   - numpy
+  - git
   - pip:
     - git+https://github.com/wuaipinglab/sra2variant.git

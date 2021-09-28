@@ -11,50 +11,36 @@ class BWAindexWrapper(CMDwrapperBase):
 
     exec_name = "bwa index"
 
-    __slots__ = ["bwa_index_base"]
-
-    def __init__(self, refSeq_file: str) -> None:
-        input_files = _FileArtifacts(
-            (refSeq_file, ),
-            cwd=os.path.dirname(refSeq_file),
-            working_id=os.path.basename(refSeq_file)
-        )
+    def __init__(self, input_files: _FileArtifacts) -> None:
         (refSeq_file, ) = input_files.file_path
-        self.bwa_index_base = None
         self.output_files = None
         super().__init__(
             input_files,
             *self.exec_args,
+            "-p", os.path.abspath(refSeq_file),
             os.path.abspath(refSeq_file)
         )
 
     def post_execution(self) -> None:
         self.output_files = self.input_files
-        (refSeq_file, ) = self.input_files.file_path
-        self.bwa_index_base = os.path.abspath(refSeq_file)
 
 
 class BWAmemWrapper(CMDwrapperBase):
     
     exec_name = "bwa mem"
-    bwa_index_base: str = None
-    refSeq_file: _FileArtifacts = None
+    bwa_index: BWAindexWrapper = None
 
     def __init__(self, input_files: _FileArtifacts) -> None:
         self.output_files = input_files.coupled_files(("_bwa-mem.sam", ))
         (sam_file, ) = self.output_files.path_from_cwd()
-        if len(input_files) == 2:
-            (paired1_file, paired2_file) = input_files.path_from_cwd()
-            input_flags = (paired1_file, paired2_file)
-        elif len(input_files) == 1:
-            (unpaired_file, ) = input_files.path_from_cwd()
-            input_flags = (unpaired_file, )
+        (refSeq_file, ) = self.bwa_index.output_files.file_path
+        input_flags = input_files.path_from_cwd()
         super().__init__(
             input_files,
             "-t", self.threads,
             *self.exec_args,
             "-o", sam_file,
-            input_files.relative_path(self.bwa_index_base),
+            os.path.abspath(refSeq_file),
             *input_flags,
         )
 
@@ -62,8 +48,7 @@ class BWAmemWrapper(CMDwrapperBase):
     def set_base_index(cls, bwa_index: BWAindexWrapper) -> None:
         if bwa_index.output_files is None:
             bwa_index.execute_cmd()
-        cls.refSeq_file = bwa_index.input_files
-        cls.bwa_index_base = bwa_index.bwa_index_base
+        cls.bwa_index = bwa_index
 
     def post_execution(self) -> None:
         (sam_file, ) = self.output_files.file_path
