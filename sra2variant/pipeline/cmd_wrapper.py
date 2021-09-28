@@ -133,7 +133,7 @@ class CMDwrapperBase(ABC):
         cls.exec_name = exec_name
 
     @classmethod
-    def set_exec_args(cls, exec_args: tuple) -> None:
+    def set_exec_args(cls, *exec_args: str) -> None:
         cls.exec_args = exec_args
 
     @classmethod

@@ -30,7 +30,6 @@ class LoFreqViterbiWraper(CMDwrapperBase):
         (refSeq_file, ) = refSeq_files.file_path
         super().__init__(
             input_files,
-            "--defqual", "2",
             *self.exec_args,
             "--ref", os.path.abspath(refSeq_file),
             "--out", viterbi_file,
@@ -63,10 +62,8 @@ class LoFreqIndelQualWrapper(CMDwrapperBase):
         super().__init__(
             input_files,
             *self.exec_args,
-            "--dindel",
-            "--verbose",
             "--ref", os.path.abspath(refSeq_file),
-            "-o", indelqual_file,
+            "--out", indelqual_file,
             sort_bam_file,
         )
 
@@ -90,22 +87,7 @@ class LoFreqCallWrapper(CMDwrapperBase):
         (refSeq_file, ) = refSeq_files.file_path
         super().__init__(
             input_files,
-            "--min-cov", "5",
-            "--max-depth", "1000000",
-            "--min-bq", "30",
-            "--min-alt-bq", "30",
-            "--min-mq", "20",
-            "--max-mq", "255",
-            "--min-jq", "0",
-            "--min-alt-jq", "0",
-            "--def-alt-jq", "0",
-            "--sig", "0.0005",
-            "--bonf", "dynamic",
-            "--no-default-filter",
-            "--no-default-filter",
             *self.exec_args,
-            "--call-indels",
-            "--verbose",
             "--ref", os.path.abspath(refSeq_file),
             "-o", vcf_file,
             indelqual_file
@@ -200,50 +182,3 @@ class BCFtoolsNormWrapper(CMDwrapperBase):
 
     def post_execution(self) -> None:
         pass
-        # (vcf_file, ) = self.output_files.file_path
-        # res = []
-        # with open(vcf_file) as f:
-        #     for record in vcf.Reader(f):
-        #         if "DP4" in record.INFO:
-        #             total_count = sum(record.INFO["DP4"])
-        #         else:
-        #             total_count = sum(record.INFO["I16"][:4])
-        #         for n, allele in enumerate(record.ALT):
-        #             if allele.type == "*":
-        #                 continue
-        #             reference = record.REF
-        #             allele_seq = allele.sequence
-        #             if len(reference) > len(allele_seq):
-        #                 variant_type = "Deletion"
-        #                 reference = reference[len(allele_seq):]
-        #                 variant_len = len(reference)
-        #                 allele_seq = "-"
-        #             elif len(record.REF) < len(allele.sequence):
-        #                 variant_type = "Insertion"
-        #                 allele_seq = allele_seq[len(reference):]
-        #                 variant_len = len(allele_seq)
-        #                 reference = "-"
-        #             else:
-        #                 variant_len = len(allele_seq)
-        #                 if variant_len == 1:
-        #                     variant_type = "SNV"
-        #                 else:
-        #                     variant_type = "MNV"
-        #             allele_count = record.INFO["AD"][n + 1]
-        #             res.append({
-        #                 "Reference Position": record.POS,
-        #                 "Type": variant_type,
-        #                 "Length": variant_len,
-        #                 "Reference": reference,
-        #                 "Allele": allele_seq,
-        #                 "Linkage": "",
-        #                 "Count": allele_count,
-        #                 "Coverage": int(total_count),
-        #                 "Frequency": allele_count / total_count,
-        #                 "Forward/reverse balance": "N/A",
-        #                 "Average quality": record.INFO["QS"][n + 1],
-        #                 "Overlapping annotations": "N/A",
-        #                 "Coding region change": "N/A",
-        #                 "Amino acid change": "N/A"
-        #             })
-        # self.output_files._write_result(res)

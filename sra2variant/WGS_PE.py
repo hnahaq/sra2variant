@@ -37,9 +37,34 @@ def run_workflow(
     if not fasta_file.exist():
         raise FileNotFoundError(f"Reference genome {refSeq_file} not found")
     bwa_index = BWAindexWrapper(fasta_file)
-    BWAmemWrapper.set_base_index(bwa_index)
-    CMDwrapperBase.set_threads(threads)
 
+    CMDwrapperBase.set_threads(threads)
+    BWAmemWrapper.set_base_index(bwa_index)
+    PicardMarkDuplicatedWrapper.set_exec_args(
+        "REMOVE_DUPLICATES=true",
+        "ASSUME_SORTED=true",
+        "DUPLICATE_SCORING_STRATEGY=SUM_OF_BASE_QUALITIES",
+        "OPTICAL_DUPLICATE_PIXEL_DISTANCE=100",
+        "VALIDATION_STRINGENCY=LENIENT",
+    )
+    LoFreqViterbiWraper.set_exec_args("--defqual", "2")
+    LoFreqIndelQualWrapper.set_exec_args("--dindel")
+    LoFreqCallWrapper.set_exec_args(
+        "--min-cov", "5",
+        "--max-depth", "1000000",
+        "--min-bq", "30",
+        "--min-alt-bq", "30",
+        "--min-mq", "20",
+        "--max-mq", "255",
+        "--min-jq", "0",
+        "--min-alt-jq", "0",
+        "--def-alt-jq", "0",
+        "--sig", "0.0005",
+        "--bonf", "dynamic",
+        "--no-default-filter",
+        "--no-default-filter",
+        "--call-indels",
+    )
     with Pool(cores) as p:
         p.starmap(__workflow, ((fn, output_dir, csv_dir) for fn in sra_files))
 

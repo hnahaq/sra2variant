@@ -18,15 +18,10 @@ class PicardMarkDuplicatedWrapper(CMDwrapperBase):
         (deduplicated_file, ) = self.output_files.path_from_cwd()
         super().__init__(
             input_files,
+            *self.exec_args,
             f"INPUT={sort_bam_file}",
             f"OUTPUT={deduplicated_file}",
             f"METRICS_FILE={input_files.workding_id}_picard_MarkDuplicates.metrics.txt",
-            "REMOVE_DUPLICATES=true",
-            "ASSUME_SORTED=true",
-            "DUPLICATE_SCORING_STRATEGY=SUM_OF_BASE_QUALITIES",
-            "OPTICAL_DUPLICATE_PIXEL_DISTANCE=100",
-            "VALIDATION_STRINGENCY=LENIENT",
-            *self.exec_args,
         )
 
     def post_execution(self) -> None:
