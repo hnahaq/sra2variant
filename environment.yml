@@ -6,12 +6,12 @@ channels:
 dependencies:
   - sra-tools>=2.11.0
   - trimmomatic
-  - fastp
-  - bwa
+  - fastp=0.20.1
+  - bwa=0.7.17
   - bowtie2
   - hisat2
-  - picard
-  - lofreq
+  - picard=2.18.2
+  - lofreq=2.1.5
   - bcftools
   - python>=3.7
   - pip

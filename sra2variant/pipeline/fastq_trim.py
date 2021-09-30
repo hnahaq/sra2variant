@@ -8,11 +8,12 @@ class FastpWrapper(CMDwrapperBase):
 
     exec_name: str = "fastp"
 
-    def __init__(self, input_files: _FileArtifacts) -> None:
+    def __init__(self, input_files: _FileArtifacts, *args: str) -> None:
         if len(input_files) == 2:
             self.output_files = input_files.coupled_files(
-                (f"_1_{self.exec_name}.fastq.gz",
-                 f"_2_{self.exec_name}.fastq.gz")
+                "_1.fastq.gz",
+                "_2.fastq.gz",
+                exec_name=self.exec_name
             )
             (paired1_file, paired2_file) = input_files.path_from_cwd()
             (trimmed1_file, trimmed2_file) = self.output_files.path_from_cwd()
@@ -24,7 +25,8 @@ class FastpWrapper(CMDwrapperBase):
             )
         elif len(input_files) == 1:
             self.output_files = input_files.coupled_files(
-                (f"_{self.exec_name}.fastq.gz", )
+                ".fastq.gz",
+                exec_name=self.exec_name
             )
             (unpaired_file, ) = input_files.path_from_cwd()
             (trimmed_file, ) = self.output_files.path_from_cwd()
@@ -35,11 +37,11 @@ class FastpWrapper(CMDwrapperBase):
         super().__init__(
             input_files,
             "--thread", self.threads,
-            *self.exec_args,
+            *args,
             *io_files_flags
         )
 
-    def post_execution(self) -> None:
+    def _post_execution(self) -> None:
         pass
 
 
@@ -47,11 +49,12 @@ class TrimmomaticWrapper(CMDwrapperBase):
 
     exec_name: str = "trimmomatic"
 
-    def __init__(self, input_files: _FileArtifacts) -> None:
+    def __init__(self, input_files: _FileArtifacts, *args: str) -> None:
         if len(input_files) == 2:
             self.output_files = input_files.coupled_files(
-                (f"_1_{self.exec_name}.fastq.gz",
-                 f"_2_{self.exec_name}.fastq.gz")
+                "_1.fastq.gz",
+                "_2.fastq.gz",
+                exec_name=self.exec_name
             )
             (paired1_file, paired2_file) = input_files.path_from_cwd()
             (trimmed1_file, trimmed2_file) = self.output_files.path_from_cwd()
@@ -66,7 +69,8 @@ class TrimmomaticWrapper(CMDwrapperBase):
             )
         elif len(input_files) == 1:
             self.output_files = input_files.coupled_files(
-                (f"_{self.exec_name}.fastq.gz", )
+                ".fastq.gz",
+                exec_name=self.exec_name
             )
             (unpaired_file, ) = input_files.path_from_cwd()
             (trimmed_file, ) = self.output_files.path_from_cwd()
@@ -85,8 +89,8 @@ class TrimmomaticWrapper(CMDwrapperBase):
             "TRAILING:3",
             "SLIDINGWINDOW:3:15",
             "MINLEN:36",
-            *self.exec_args,
+            *args,
         )
 
-    def post_execution(self) -> None:
+    def _post_execution(self) -> None:
         pass

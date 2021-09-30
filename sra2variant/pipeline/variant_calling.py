@@ -1,7 +1,5 @@
 import os
 
-import pysam
-
 from sra2variant.pipeline.cmd_wrapper import (
     _FileArtifacts,
     CMDwrapperBase,
@@ -15,6 +13,23 @@ gatk HaplotypeCaller -R NC_045512.2.fasta -I SRR15432222.sort.bam -O SRR15432222
 """
 
 
+class LoFreqFaidxWrapper(CMDwrapperBase):
+    
+    exec_name: str = "lofreq faidx"
+
+    def __init__(self, input_files: _FileArtifacts, *args: str) -> None:
+        self.output_files = None
+        (refSeq_file, ) = input_files.file_path
+        super().__init__(
+            input_files,
+            *args,
+            refSeq_file
+        )
+
+    def _post_execution(self) -> None:
+        self.output_files = self.input_files
+
+
 class LoFreqViterbiWraper(CMDwrapperBase):
 
     exec_name: str = "lofreq viterbi"
@@ -22,28 +37,26 @@ class LoFreqViterbiWraper(CMDwrapperBase):
     def __init__(
         self,
         input_files: _FileArtifacts,
-        refSeq_files: _FileArtifacts
+        refSeq_files: _FileArtifacts,
+        *args: str
     ) -> None:
         (sort_bam_file, ) = input_files.path_from_cwd()
-        self.output_files = input_files.coupled_files(("_lofreq_viterbi", ))
+        self.output_files = input_files.coupled_files(
+            ".bam",
+            exec_name=self.exec_name
+        )
         (viterbi_file, ) = self.output_files.path_from_cwd()
         (refSeq_file, ) = refSeq_files.file_path
         super().__init__(
             input_files,
-            *self.exec_args,
+            *args,
             "--ref", os.path.abspath(refSeq_file),
             "--out", viterbi_file,
             sort_bam_file,
         )
 
-    def post_execution(self) -> None:
-        (viterbi_file, ) = self.output_files.file_path
-        self.output_files = self.output_files.coupled_files(
-            ("_lofreq_viterbi.sort.bam", )
-        )
-        (sort_bam_file, ) = self.output_files.file_path
-        pysam.sort("-@", self.threads, "-o", sort_bam_file, viterbi_file)
-        pysam.index(sort_bam_file)
+    def _post_execution(self) -> None:
+        pass
 
 
 class LoFreqIndelQualWrapper(CMDwrapperBase):
@@ -53,47 +66,78 @@ class LoFreqIndelQualWrapper(CMDwrapperBase):
     def __init__(
         self,
         input_files: _FileArtifacts,
-        refSeq_files: _FileArtifacts
+        refSeq_files: _FileArtifacts,
+        *args: str
     ) -> None:
-        self.output_files = input_files.coupled_files(("_lofreq_indelqual", ))
+        self.output_files = input_files.coupled_files(
+            ".bam",
+            exec_name=self.exec_name
+        )
         (sort_bam_file, ) = input_files.path_from_cwd()
         (indelqual_file, ) = self.output_files.path_from_cwd()
         (refSeq_file, ) = refSeq_files.file_path
         super().__init__(
             input_files,
-            *self.exec_args,
+            *args,
             "--ref", os.path.abspath(refSeq_file),
             "--out", indelqual_file,
             sort_bam_file,
         )
 
-    def post_execution(self) -> None:
-        (indelqual_file, ) = self.output_files.file_path
-        pysam.index(indelqual_file)
+    def _post_execution(self) -> None:
+        pass
 
 
 class LoFreqCallWrapper(CMDwrapperBase):
 
-    exec_name: str = "lofreq call"
+    exec_name: str = "lofreq call-parallel"
 
     def __init__(
         self,
         input_files: _FileArtifacts,
-        refSeq_files: _FileArtifacts
+        refSeq_files: _FileArtifacts,
+        *args: str
     ) -> None:
-        self.output_files = input_files.coupled_files(("_lofreq.vcf", ))
+        self.output_files = input_files.coupled_files(
+            ".vcf",
+            exec_name="lofreq call"
+        )
         (indelqual_file, ) = input_files.path_from_cwd()
         (vcf_file, ) = self.output_files.path_from_cwd()
         (refSeq_file, ) = refSeq_files.file_path
         super().__init__(
             input_files,
-            *self.exec_args,
+            "--pp-threads", self.threads,
+            *args,
+            "--verbose",
             "--ref", os.path.abspath(refSeq_file),
-            "-o", vcf_file,
+            "--out", vcf_file,
             indelqual_file
         )
 
-    def post_execution(self) -> None:
+    def _post_execution(self) -> None:
+        pass
+
+
+class LoFreqFilterWrapper(CMDwrapperBase):
+
+    exec_name: str = "lofreq filter"
+
+    def __init__(self, input_files: _FileArtifacts, *args: str) -> None:
+        self.output_files = input_files.coupled_files(
+            ".vcf",
+            exec_name=self.exec_name
+        )
+        (vcf_file, ) = input_files.path_from_cwd()
+        (filter_file, ) = self.output_files.path_from_cwd()
+        super().__init__(
+            input_files,
+            *args,
+            "-i", vcf_file,
+            "-o", filter_file,
+        )
+
+    def _post_execution(self) -> None:
         pass
 
 
@@ -104,9 +148,10 @@ class BCFtoolsMpileupWrapper(CMDwrapperBase):
     def __init__(
         self,
         input_files: _FileArtifacts,
-        refSeq_files: _FileArtifacts
+        refSeq_files: _FileArtifacts,
+        *args: str
     ) -> None:
-        self.output_files = input_files.coupled_files(("_bcftools_mpileup", ))
+        self.output_files = input_files.coupled_files("_bcftools_mpileup")
         (sort_bam_file, ) = input_files.path_from_cwd()
         (mpileup_file, ) = self.output_files.path_from_cwd()
         (refSeq_file, ) = refSeq_files.file_path
@@ -117,13 +162,13 @@ class BCFtoolsMpileupWrapper(CMDwrapperBase):
             "--threads", self.threads,
             "--fasta-ref", os.path.abspath(refSeq_file),
             "--output-type", "b",
-            *self.exec_args,
+            *args,
             "--annotate", "INFO/AD,INFO/ADF,INFO/ADR",
             "--output", mpileup_file,
             sort_bam_file
         )
 
-    def post_execution(self) -> None:
+    def _post_execution(self) -> None:
         pass
 
 
@@ -134,8 +179,9 @@ class BCFtoolsMpileupWrapper(CMDwrapperBase):
 #     def __init__(
 #         self,
 #         input_files: _FileArtifacts,
+#         *args: str
 #     ) -> None:
-#         self.output_files = input_files.coupled_files(("_bcftools_call", ))
+#         self.output_files = input_files.coupled_files("_bcftools_call")
 #         (mpileup_file, ) = input_files.path_from_cwd()
 #         (call_bcf_file, ) = self.output_files.path_from_cwd()
 #         super().__init__(
@@ -144,7 +190,7 @@ class BCFtoolsMpileupWrapper(CMDwrapperBase):
 #             "--output-type", "b",
 #             "--prior", "0",
 #             "--ploidy", "1",
-#             *self.exec_args,
+#             *args,
 #             "--keep-alts",
 #             "--variants-only",
 #             "--multiallelic-caller",
@@ -152,7 +198,7 @@ class BCFtoolsMpileupWrapper(CMDwrapperBase):
 #             mpileup_file
 #         )
 
-#     def post_execution(self) -> None:
+#     def _post_execution(self) -> None:
 #         pass
 
 
@@ -163,9 +209,10 @@ class BCFtoolsNormWrapper(CMDwrapperBase):
     def __init__(
         self,
         input_files: _FileArtifacts,
-        refSeq_files: _FileArtifacts
+        refSeq_files: _FileArtifacts,
+        *args: str
     ) -> None:
-        self.output_files = input_files.coupled_files(("_bcftools_norm", ))
+        self.output_files = input_files.coupled_files("_bcftools_norm")
         (call_bcf_file, ) = input_files.path_from_cwd()
         (norm_vcf_file, ) = self.output_files.path_from_cwd()
         (refSeq_file, ) = refSeq_files.file_path
@@ -175,10 +222,10 @@ class BCFtoolsNormWrapper(CMDwrapperBase):
             "--multiallelics", "-any",
             "--output-type", "v",
             "--fasta-ref", os.path.abspath(refSeq_file),
-            *self.exec_args,
+            *args,
             "--output", norm_vcf_file,
             call_bcf_file
         )
 
-    def post_execution(self) -> None:
+    def _post_execution(self) -> None:
         pass

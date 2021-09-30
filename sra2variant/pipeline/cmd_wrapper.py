@@ -25,18 +25,20 @@ CSV_FIELD_NAMES = (
 
 class _FileArtifacts:
 
-    __slots__ = ["file_path", "cwd", "workding_id", "res_dir"]
+    __slots__ = ["file_path", "workding_id", "exec_seq", "cwd", "res_dir"]
 
     def __init__(
         self,
-        file_path: tuple = tuple(),
-        cwd: str = None,
+        *file_path: str,
         working_id: str = "",
+        exec_seq: str = "",
+        cwd: str = None,
         res_dir: str = None
     ) -> None:
         self.file_path: tuple[str] = file_path
-        self.cwd: str = cwd
         self.workding_id: str = working_id
+        self.exec_seq: str = exec_seq
+        self.cwd: str = cwd
         if res_dir is None:
             if cwd is None:
                 raise ValueError("cwd and res_dir cannot both be None")
@@ -69,17 +71,20 @@ class _FileArtifacts:
     def relative_path(self, target_path: str) -> str:
         return os.path.relpath(target_path, self.cwd)
 
-    def coupled_files(self, new_ext: tuple) -> "_FileArtifacts":
+    def coupled_files(self, *exts: str, exec_name: str) -> "_FileArtifacts":
+        middle = self.exec_seq
+        middle += f"_{exec_name.replace(' ', '_')}" if exec_name else ""
         return _FileArtifacts(
-            file_path=tuple(f"{self.file_prefix()}{i}" for i in new_ext),
-            cwd=self.cwd,
+            *tuple(f"{self.file_prefix()}{middle}{ext}" for ext in exts),
             working_id=self.workding_id,
+            exec_seq=middle,
+            cwd=self.cwd,
             res_dir=self.res_dir
         )
 
     def create_cwd(self) -> None:
         if os.path.exists(self.cwd):
-            print(f"Delete existing ${self.cwd}")
+            print(f"Delete existing {self.cwd}")
             shutil.rmtree(self.cwd)
         os.makedirs(self.cwd)
 
@@ -99,7 +104,6 @@ class _FileArtifacts:
 class CMDwrapperBase(ABC):
 
     exec_name: str = None
-    exec_args: tuple = tuple()
     threads: str = "2"
 
     __slots__ = ["input_files", "output_files",
@@ -133,15 +137,14 @@ class CMDwrapperBase(ABC):
         cls.exec_name = exec_name
 
     @classmethod
-    def set_exec_args(cls, *exec_args: str) -> None:
-        cls.exec_args = exec_args
-
-    @classmethod
     def set_threads(cls, threads: int) -> None:
         cls.threads = str(threads)
 
     def execute_cmd(self) -> _FileArtifacts:
         if not self.input_files.exist():
+            with open(self._log_file(), "a") as f:
+                f.write(f"Input files for {str(self)} not found:\n")
+                f.write(f"{', '.join(self.input_files.file_path)}")
             return _FileArtifacts(
                 cwd=self.input_files.cwd,
                 res_dir=self.input_files.res_dir
@@ -155,23 +158,28 @@ class CMDwrapperBase(ABC):
                 self.stdout, self.stderr = p.communicate()
         except subprocess.SubprocessError as e:
             with open(self._log_file(), "a") as f:
-                f.write(f"{self.exec_name} failed: {e}\n")
+                f.write(f"{str(self)} failed: {e}\n")
                 f.write(f"Working directory: {self.input_files.cwd}\n")
                 f.write(f"Executed command: {str(self)}\n")
         if p.returncode:
             self.append_log()
         else:
-            self.post_execution()
+            self._post_execution()
         return self.output_files
-
-    @abstractmethod
-    def post_execution(self) -> None:
-        return NotImplemented
 
     def append_log(self) -> None:
         with open(self._log_file(), "a") as f:
+            f.write(f"{str(self)}\n")
             f.write(f"{self.exec_name} stdout:\n{self.stdout}\n")
             f.write(f"{self.exec_name} stderr:\n{self.stderr}\n")
+
+    @abstractmethod
+    def _post_execution(self) -> None:
+        return NotImplemented
+
+    # @abstractmethod
+    # def _output_files(self) -> _FileArtifacts:
+    #     return NotImplemented
 
     def _log_file(self) -> str:
         res = f"{self.input_files.file_prefix()}_log.txt"
