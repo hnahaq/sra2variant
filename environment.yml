@@ -4,14 +4,14 @@ channels:
   - bioconda
   - defaults
 dependencies:
-  - sra-tools>=2.11.0
+  - sra-tools
   - trimmomatic
-  - fastp=0.20.1
-  - bwa=0.7.17
+  - fastp
+  - bwa
   - bowtie2
   - hisat2
-  - picard=2.18.2
-  - lofreq=2.1.5
+  - picard
+  - lofreq
   - bcftools
   - python>=3.7
   - pip

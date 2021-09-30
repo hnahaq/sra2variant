@@ -6,9 +6,13 @@ import unittest
 from sra2variant import WGS_PE
 from sra2variant.pipeline.sra2fastq import PrefetchWrapper
 
-THIS_DIR = os.path.dirname(__file__)
-DATA_DIR = os.path.join(THIS_DIR, os.pardir, "data")
-TEMP_DIR = os.path.join(THIS_DIR, os.pardir, "temp")
+THIS_DIR = os.path.join(
+    os.path.dirname(__file__),
+    os.pardir,
+    "sra2variant"
+)
+DATA_DIR = os.path.join(THIS_DIR, "data")
+TEMP_DIR = os.path.join(THIS_DIR, "temp")
 
 
 class TestWorkFlow(unittest.TestCase):
