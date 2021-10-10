@@ -53,7 +53,7 @@ class SAMtoolsViewWrapper(CMDwrapperBase):
         (sam_file, ) = input_files.path_from_cwd()
         self.output_files = input_files.coupled_files(
             ".bam",
-            exec_name="trimmed"
+            exec_name="view"
         )
         (trimmed_sam_file, ) = self.output_files.path_from_cwd()
         super().__init__(

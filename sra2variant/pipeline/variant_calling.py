@@ -14,7 +14,7 @@ gatk HaplotypeCaller -R NC_045512.2.fasta -I SRR15432222.sort.bam -O SRR15432222
 
 
 class LoFreqFaidxWrapper(CMDwrapperBase):
-    
+
     exec_name: str = "lofreq faidx"
 
     def __init__(self, input_files: _FileArtifacts, *args: str) -> None:
@@ -43,7 +43,7 @@ class LoFreqViterbiWraper(CMDwrapperBase):
         (sort_bam_file, ) = input_files.path_from_cwd()
         self.output_files = input_files.coupled_files(
             ".bam",
-            exec_name=self.exec_name
+            exec_name="viterbi"
         )
         (viterbi_file, ) = self.output_files.path_from_cwd()
         (refSeq_file, ) = refSeq_files.file_path
@@ -71,7 +71,7 @@ class LoFreqIndelQualWrapper(CMDwrapperBase):
     ) -> None:
         self.output_files = input_files.coupled_files(
             ".bam",
-            exec_name=self.exec_name
+            exec_name="indelqual"
         )
         (sort_bam_file, ) = input_files.path_from_cwd()
         (indelqual_file, ) = self.output_files.path_from_cwd()
@@ -139,6 +139,153 @@ class LoFreqFilterWrapper(CMDwrapperBase):
 
     def _post_execution(self) -> None:
         pass
+
+
+class IvarTrimWrapper(CMDwrapperBase):
+
+    exec_name = "ivar trim"
+    primer_bed_file: _FileArtifacts = None
+    amplicon_info_file: _FileArtifacts = None
+
+    def __init__(self, input_files: _FileArtifacts, *args: str) -> None:
+        (sort_bam_file, ) = input_files.path_from_cwd()
+        bed_file_flag = ()
+        if self.primer_bed_file:
+            (bed_file, ) = self.primer_bed_file.file_path
+            bed_file_flag = ("-b", os.path.abspath(bed_file))
+        amplicon_info_flag = ()
+        if self.amplicon_info_file:
+            (tsv_file, ) = self.amplicon_info_file.file_path
+            amplicon_info_flag = ("-f", os.path.abspath(tsv_file))
+        self.output_files = input_files.coupled_files(
+            ".bam",
+            exec_name=self.exec_name
+        )
+        (trimmed_bam_file, ) = self.output_files.path_from_cwd()
+        super().__init__(
+            input_files,
+            *args,
+            *bed_file_flag,
+            *amplicon_info_flag,
+            "-i", sort_bam_file,
+            "-p", trimmed_bam_file[:-4]
+        )
+
+    @classmethod
+    def set_primer_file(cls, primer_bed_file: _FileArtifacts) -> None:
+        cls.primer_bed_file = primer_bed_file
+
+    @classmethod
+    def set_amplicon_info(cls, amplicon_info_file: _FileArtifacts) -> None:
+        cls.amplicon_info_file = amplicon_info_file
+
+    def _post_execution(self) -> None:
+        pass
+
+
+class IvarGetMaskedWrapper(CMDwrapperBase):
+
+    exec_name = "ivar getmasked"
+    primer_bed_file: _FileArtifacts = None
+    amplicon_info_file: _FileArtifacts = None
+    
+    def __init__(self, input_files: _FileArtifacts, *args: str) -> None:
+        (vcf_file, ) = input_files.path_from_cwd()
+        (bed_file, ) = self.primer_bed_file.file_path
+        (tsv_file, ) = self.amplicon_info_file.file_path
+        self.output_files = input_files.coupled_files(
+            ".txt",
+            exec_name=self.exec_name
+        )
+        (masked_primers, ) = self.output_files.path_from_cwd()
+        super().__init__(
+            input_files,
+            *args,
+            "-b", os.path.abspath(bed_file),
+            "-f", os.path.abspath(tsv_file),
+            "-i", vcf_file,
+            "-p", masked_primers[:-4]
+        )
+
+    @classmethod
+    def set_primer_file(cls, primer_bed_file: _FileArtifacts) -> None:
+        cls.primer_bed_file = primer_bed_file
+
+    @classmethod
+    def set_amplicon_info(cls, amplicon_info_file: _FileArtifacts) -> None:
+        cls.amplicon_info_file = amplicon_info_file
+
+    def _post_execution(self) -> None:
+        pass
+
+
+class IvarRemoveReadsWrapper(CMDwrapperBase):
+
+    exec_name = "ivar removereads"
+    primer_bed_file: _FileArtifacts = None
+
+    def __init__(
+        self,
+        input_files: _FileArtifacts,
+        masked_primers_file: _FileArtifacts,
+        *args: str
+    ) -> None:
+        (sort_bam_file, ) = input_files.file_path
+        (masked_primers, ) = masked_primers_file.file_path
+        (bed_file, ) = self.primer_bed_file.file_path
+        self.output_files = input_files.coupled_files(
+            ".bam",
+            exec_name=self.exec_name
+        )
+        (trimmed_bam_file, ) = self.output_files.path_from_cwd()
+        super().__init__(
+            input_files,
+            *args,
+            "-t", os.path.abspath(masked_primers),
+            "-b", os.path.abspath(bed_file),
+            "-i", sort_bam_file,
+            "-p", trimmed_bam_file[:-4]
+        )
+
+    @classmethod
+    def set_primer_file(cls, primer_bed_file: _FileArtifacts) -> None:
+        cls.primer_bed_file = primer_bed_file
+
+    def _post_execution(self) -> None:
+        pass
+
+
+class VCFintersectWrapper(CMDwrapperBase):
+
+    exec_name = "vcfintersect"
+
+    def __init__(
+        self,
+        input_files: _FileArtifacts,
+        vcf_files: _FileArtifacts,
+        refSeq_files: _FileArtifacts,
+        union: bool,
+        *args: str
+    ) -> None:
+        (vcf_file_1, ) = input_files.path_from_cwd()
+        (vcf_file_2, ) = vcf_files.path_from_cwd()
+        (refSeq_file, ) = refSeq_files.file_path
+        self.output_files = vcf_files.coupled_files(
+            ".vcf",
+            exec_name="union" if union else "intersect"
+        )
+        super().__init__(
+            input_files,
+            *args,
+            "-r", os.path.abspath(refSeq_file),
+            "-u" if union else "-i", vcf_file_1,
+            vcf_file_2
+        )
+
+    def _post_execution(self) -> None:
+        (vcf_file, ) = self.output_files.file_path
+        with open(vcf_file, "w") as f:
+            f.writelines(self.stdout)
 
 
 class BCFtoolsMpileupWrapper(CMDwrapperBase):

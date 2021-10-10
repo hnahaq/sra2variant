@@ -3,7 +3,7 @@ import glob
 import shutil
 import unittest
 
-from sra2variant import WGS_PE
+from sra2variant import WGS_PE, ARTIC_PE
 from sra2variant.pipeline.sra2fastq import PrefetchWrapper
 
 THIS_DIR = os.path.join(
@@ -20,6 +20,8 @@ class TestWorkFlow(unittest.TestCase):
         if os.path.exists(TEMP_DIR):
             shutil.rmtree(TEMP_DIR)
         self.refSeq_file = os.path.join(DATA_DIR, "NC_045512.2.fasta")
+        self.primer_file = os.path.join(DATA_DIR, "ARTIC_nCoV-2019_v3.bed")
+        self.amplicon_info_file = os.path.join(DATA_DIR, "ARTIC_amplicon_info_v3.tsv")
         self.output_dir = os.path.join(TEMP_DIR, "output")
         self.csv_dir = os.path.join(TEMP_DIR, "csv")
         if not os.path.exists(self.output_dir):
@@ -27,8 +29,25 @@ class TestWorkFlow(unittest.TestCase):
         if not os.path.exists(self.csv_dir):
             os.makedirs(self.csv_dir)
 
-    # def test_SE_workflow(self):
-    #     sra_id = "ERR4238190"
+    def test_ARTIC_PE(self):
+        sra_id = "SRR14388832"
+        sra_file = os.path.join(DATA_DIR, f"{sra_id}.sra")
+        if not os.path.exists(sra_file):
+            prefetch = PrefetchWrapper(sra_id, DATA_DIR)
+            prefetch.execute_cmd()
+
+        ARTIC_PE.run_workflow(
+            refSeq_file=self.refSeq_file,
+            primer_file=self.primer_file,
+            amplicon_info_file=self.amplicon_info_file,
+            sra_files=[sra_file],
+            output_dir=self.output_dir,
+            csv_dir=self.csv_dir,
+            cores=2,
+            threads=os.cpu_count()
+        )
+        
+        os.remove(sra_file)
 
     def test_PE_workflow(self):
         sra_id = "ERR4989943"

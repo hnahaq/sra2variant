@@ -153,7 +153,9 @@ class CMDwrapperBase(ABC):
             with subprocess.Popen(
                 self.cmd,
                 text=True,
-                cwd=self.input_files.cwd
+                cwd=self.input_files.cwd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
             ) as p:
                 self.stdout, self.stderr = p.communicate()
         except subprocess.SubprocessError as e:

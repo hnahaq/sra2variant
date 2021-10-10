@@ -31,7 +31,6 @@ class FastqDumpWrapper(CMDwrapperBase):
             ".fastq",
             exec_name=""
         )
-        print(paired_files)
         if paired_files.exist():
             self.output_files = paired_files
         elif unpaired_file.exist():
