@@ -11,6 +11,8 @@ dependencies:
   - bowtie2
   - hisat2
   - picard
+  - ivar
+  - vcflib
   - lofreq
   - bcftools
   - python>=3.7

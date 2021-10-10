@@ -46,7 +46,8 @@ class TestWorkFlow(unittest.TestCase):
             cores=2,
             threads=os.cpu_count()
         )
-        
+        for fn in glob.glob(os.path.join(DATA_DIR, "_*")):
+            os.remove(fn)
         os.remove(sra_file)
 
     def test_PE_workflow(self):
