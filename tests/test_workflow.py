@@ -50,7 +50,7 @@ class TestWorkFlow(unittest.TestCase):
             os.remove(fn)
         os.remove(sra_file)
 
-    def test_PE_workflow(self):
+    def test_WGS_PE(self):
         sra_id = "ERR4989943"
         sra_file = os.path.join(DATA_DIR, f"{sra_id}.sra")
         if not os.path.exists(sra_file):

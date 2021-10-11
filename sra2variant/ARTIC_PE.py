@@ -62,6 +62,8 @@ def run_workflow(
     )
     if not tsv_file.exist():
         raise FileNotFoundError(f"Primer file {amplicon_info_file} not found")
+
+    bed_file = sanitize_bed(bed_file)
     tsv_file_2 = prepare_amplicon_info(bed_file, tsv_file)
     tsv_file_3 = write_amplicon_info_file(bed_file)
 
@@ -220,6 +222,33 @@ def __workflow(
         "-c", "0.001"
     ).execute_cmd()
     vcf2csv(vcf_files)
+
+
+def sanitize_bed(primer_bed_file: _FileArtifacts) -> None:
+    # This function is a direct copy from:
+    # https://github.com/galaxyproject/tools-iuc/tree/master/tools/ivar/
+    (bed_file, ) = primer_bed_file.file_path
+    with open(bed_file) as i:
+        bed_data = i.readlines()
+
+    res = primer_bed_file.coupled_files(
+        ".bed",
+        exec_name="sanitize_bed"
+    )
+    (sanitize_bed_file, ) = res.file_path
+    sanitized_data = []
+    try:
+        for record in bed_data:
+            fields = record.split('\t')
+            sanitized_data.append(
+                '\t'.join(fields[:4] + ['60'] + fields[5:])
+            )
+    except IndexError:
+        pass  # leave column number issue to getmasked
+    else:
+        with open(sanitize_bed_file, 'w') as o:
+            o.writelines(sanitized_data)
+    return res
 
 
 def prepare_amplicon_info(

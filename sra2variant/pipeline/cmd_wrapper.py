@@ -149,6 +149,7 @@ class CMDwrapperBase(ABC):
                 cwd=self.input_files.cwd,
                 res_dir=self.input_files.res_dir
             )
+        print("\n", str(self))
         try:
             with subprocess.Popen(
                 self.cmd,
