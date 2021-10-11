@@ -1,19 +1,16 @@
 name: sra2variant
-
 on: [push, pull_request]
-
 defaults:
   run:
     shell: bash -l {0}
 
 jobs:
-  build-os:
+  run_sra2variant_test:
     name: sra2variant test on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         os: ["ubuntu-latest", "macos-latest"]
-
     steps:
       - uses: actions/checkout@v2
       - uses: conda-incubator/setup-miniconda@v2
@@ -21,6 +18,7 @@ jobs:
           environment-file: environment.yml
           activate-environment: sra2variant
           channels: conda-forge,bioconda,defaults
+          mamba-version: "*"
       - name: Install sra2variant
         run: pip install -e .
       - name: Test with unittest
