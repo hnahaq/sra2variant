@@ -2,6 +2,7 @@ import os
 import shutil
 import subprocess
 import csv
+import datetime
 from abc import ABC, abstractmethod
 
 
@@ -149,7 +150,8 @@ class CMDwrapperBase(ABC):
                 cwd=self.input_files.cwd,
                 res_dir=self.input_files.res_dir
             )
-        print("\n", str(self))
+        print(f"[{datetime.datetime.now()}]:",
+              self.input_files.workding_id, self.exec_name)
         try:
             with subprocess.Popen(
                 self.cmd,
@@ -164,9 +166,8 @@ class CMDwrapperBase(ABC):
                 f.write(f"{str(self)} failed: {e}\n")
                 f.write(f"Working directory: {self.input_files.cwd}\n")
                 f.write(f"Executed command: {str(self)}\n")
-        if p.returncode:
-            self.append_log()
-        else:
+        self.append_log()
+        if p.returncode == 0:
             self._post_execution()
         return self.output_files
 
@@ -179,10 +180,6 @@ class CMDwrapperBase(ABC):
     @abstractmethod
     def _post_execution(self) -> None:
         return NotImplemented
-
-    # @abstractmethod
-    # def _output_files(self) -> _FileArtifacts:
-    #     return NotImplemented
 
     def _log_file(self) -> str:
         res = f"{self.input_files.file_prefix()}_log.txt"

@@ -71,6 +71,8 @@ class TestWorkFlow(unittest.TestCase):
     def tearDown(self):
         for fn in glob.glob(os.path.join(DATA_DIR, "NC_045512.2.fasta.*")):
             os.remove(fn)
+        for fn in glob.glob(os.path.join(DATA_DIR, "*log.txt")):
+            os.remove(fn)
         if os.path.exists(TEMP_DIR):
             shutil.rmtree(TEMP_DIR)
 

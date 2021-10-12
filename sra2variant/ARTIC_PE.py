@@ -164,6 +164,7 @@ def __workflow(
     vcf_files = LoFreqFilterWrapper(
         vcf_files_1,
         "--no-defaults",
+        "--verbose",
         "-v", "5",
         "-V", "0",
         "-a", "0.1",
@@ -195,8 +196,8 @@ def __workflow(
         "--no-default-filter",
     ).execute_cmd()
     vcf_files_3 = VCFintersectWrapper(
-        vcf_files_1,
         vcf_files_2,
+        vcf_files_1,
         refSeq_file,
         False,
         "-v",
