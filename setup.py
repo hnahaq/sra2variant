@@ -1,6 +1,5 @@
 from setuptools import setup, find_packages
 
-
 from sra2variant import __version__
 
 setup(
@@ -9,7 +8,7 @@ setup(
     description="Convert SRA file to variant",
     packages=find_packages(),
     python_requires='>=3.7',
-    install_requires=["pyvcf", "numpy"],
+    install_requires=["pyvcf"],
     url="https://github.com/wuaipinglab/ncov_sequencing_variant",
     author="Chengyang Ji",
     author_email="chengyang.ji12@alumni.xjtlu.edu.cn",

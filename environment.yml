@@ -19,7 +19,6 @@ dependencies:
   - pip
   - pyvcf
   - pysam
-  - numpy
   - git
   - pip:
     - git+https://github.com/wuaipinglab/sra2variant.git

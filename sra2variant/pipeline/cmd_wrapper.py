@@ -95,6 +95,9 @@ class _FileArtifacts:
     def result_file(self) -> None:
         return os.path.join(self.res_dir, f"{self.workding_id}.csv")
 
+    def log_file(self) -> str:
+        return f"{self.file_prefix()}_log.txt"
+
     def _write_result(self, workflow_res: tuple) -> None:
         with open(self.result_file(), "w", newline="") as f:
             csv_writer = csv.DictWriter(f, fieldnames=CSV_FIELD_NAMES)
@@ -142,45 +145,24 @@ class CMDwrapperBase(ABC):
         cls.threads = str(threads)
 
     def execute_cmd(self) -> _FileArtifacts:
-        if not self.input_files.exist():
-            with open(self._log_file(), "a") as f:
-                f.write(f"Input files for {str(self)} not found:\n")
-                f.write(f"{', '.join(self.input_files.file_path)}")
-            return _FileArtifacts(
-                cwd=self.input_files.cwd,
-                res_dir=self.input_files.res_dir
-            )
         print(f"[{datetime.datetime.now()}]:",
               self.input_files.workding_id, self.exec_name)
-        try:
-            with subprocess.Popen(
-                self.cmd,
-                text=True,
-                cwd=self.input_files.cwd,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-            ) as p:
-                self.stdout, self.stderr = p.communicate()
-        except subprocess.SubprocessError as e:
-            with open(self._log_file(), "a") as f:
-                f.write(f"{str(self)} failed: {e}\n")
-                f.write(f"Working directory: {self.input_files.cwd}\n")
-                f.write(f"Executed command: {str(self)}\n")
-        self.append_log()
+        with subprocess.Popen(
+            self.cmd,
+            text=True,
+            cwd=self.input_files.cwd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        ) as p:
+            self.stdout, self.stderr = p.communicate()
+        with open(self.input_files.log_file(), "a") as f:
+            f.write(f"[Command]:\n{str(self)}\n")
+            f.write(f"[stdout]:\n{self.stdout}\n")
+            f.write(f"[stderr]:\n{self.stderr}\n")
         if p.returncode == 0:
             self._post_execution()
         return self.output_files
 
-    def append_log(self) -> None:
-        with open(self._log_file(), "a") as f:
-            f.write(f"{str(self)}\n")
-            f.write(f"{self.exec_name} stdout:\n{self.stdout}\n")
-            f.write(f"{self.exec_name} stderr:\n{self.stderr}\n")
-
     @abstractmethod
     def _post_execution(self) -> None:
         return NotImplemented
-
-    def _log_file(self) -> str:
-        res = f"{self.input_files.file_prefix()}_log.txt"
-        return res

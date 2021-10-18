@@ -1,13 +1,14 @@
 from collections import defaultdict
 from copy import deepcopy
 
-import numpy as np
 import vcf
 
 from sra2variant.pipeline.cmd_wrapper import _FileArtifacts
 
 
 def resolve_MNV(temp_records: dict) -> list:
+
+    positions = list(temp_records.keys())
 
     if len(temp_records) == 1:
         (records, ) = temp_records.values()
@@ -73,6 +74,11 @@ def resolve_MNV(temp_records: dict) -> list:
             init_compare = compare_end
 
             for ref_rec_index in range(compare_start, compare_end):
+                if ref_rec_index >= len(res):
+                    raise AmbiguousSNPcombination(
+                        "The positions have ambiguous SNP combination",
+                        positions
+                    )
                 if type(res[ref_rec_index]["Reference Position"]) is int:
                     res[ref_rec_index]["Reference Position"] = [
                         res[ref_rec_index]["Reference Position"],
@@ -80,7 +86,8 @@ def resolve_MNV(temp_records: dict) -> list:
                     ]
                 else:
                     res[ref_rec_index]["Reference Position"].append(
-                        rec["Reference Position"])
+                        rec["Reference Position"]
+                    )
 
                 res[ref_rec_index]["Type"] = "MNV"
                 res[ref_rec_index]["Length"] += 1
@@ -95,8 +102,6 @@ def resolve_MNV(temp_records: dict) -> list:
         if (type(ref_rec["Reference Position"]) is int):
             continue
         else:
-            sort_i2 = np.argsort(ref_rec["Reference Position"])
-            all(i == j for i, j in zip(sort_i, sort_i2))
             ref_rec["Reference Position"] = min(ref_rec["Reference Position"])
             ref_rec["Reference"] = "".join(
                 ref_rec["Reference"][i] for i in sort_i)
@@ -175,3 +180,7 @@ def vcf2csv(vcf_files: _FileArtifacts) -> None:
         if len(temp_records):
             res.extend(resolve_MNV(temp_records))
     vcf_files._write_result(res)
+
+
+class AmbiguousSNPcombination(ValueError):
+    pass

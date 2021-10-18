@@ -34,7 +34,7 @@ prefetch -o ./wgs_reads/SRR14119629.sra SRR14119629
 3. Use the pipeline for WGS paired end reads. In this example, We use the reference genome `./reference/NC_045512.2.fasta` to analyze all `sra` files in `./wgs_reads` directory.
 
 ```bash
-sra2variant-WGS-PE -i ./wgs_reads -r ./reference/NC_045512.2.fasta
+sra2variant-WGS-PE -r ./reference/NC_045512.2.fasta -i ./wgs_reads
 ```
 
 ### ARTIC PE
@@ -65,10 +65,10 @@ prefetch -o ./artic_reads/SRR14398873.sra SRR14398873
 3. Use the pipeline for WGS paired end reads. In this example, We use the reference genome `./reference/NC_045512.2.fasta` to analyze all `sra` files in `./artic_reads` directory.
 
 ```bash
-sra2variant-ARTIC-PE -i ./artic_reads/ \
-                     -r ./reference/NC_045512.2.fasta \
-                     -p reference/ARTIC_nCoV-2019_v3.bed \
-                     -a reference/ARTIC_amplicon_info_v3.tsv
+sra2variant-ARTIC-PE -r ./reference/NC_045512.2.fasta \
+                     -p ./reference/ARTIC_nCoV-2019_v3.bed \
+                     -a ./reference/ARTIC_amplicon_info_v3.tsv \
+                     -i ./artic_reads/
 ```
 
 Other pipelines are under development

@@ -21,13 +21,17 @@ class TestWorkFlow(unittest.TestCase):
             shutil.rmtree(TEMP_DIR)
         self.refSeq_file = os.path.join(DATA_DIR, "NC_045512.2.fasta")
         self.primer_file = os.path.join(DATA_DIR, "ARTIC_nCoV-2019_v3.bed")
-        self.amplicon_info_file = os.path.join(DATA_DIR, "ARTIC_amplicon_info_v3.tsv")
+        self.amplicon_info_file = os.path.join(
+            DATA_DIR, "ARTIC_amplicon_info_v3.tsv")
         self.output_dir = os.path.join(TEMP_DIR, "output")
         self.csv_dir = os.path.join(TEMP_DIR, "csv")
+        self.error_dir = os.path.join(TEMP_DIR, "errors")
         if not os.path.exists(self.output_dir):
             os.makedirs(self.output_dir)
         if not os.path.exists(self.csv_dir):
             os.makedirs(self.csv_dir)
+        if not os.path.exists(self.error_dir):
+            os.makedirs(self.error_dir)
 
     def test_ARTIC_PE(self):
         sra_id = "SRR14388832"
@@ -44,7 +48,8 @@ class TestWorkFlow(unittest.TestCase):
             output_dir=self.output_dir,
             csv_dir=self.csv_dir,
             cores=2,
-            threads=os.cpu_count()
+            threads=os.cpu_count(),
+            error_dir=self.error_dir,
         )
         for fn in glob.glob(os.path.join(DATA_DIR, "_*")):
             os.remove(fn)
@@ -63,9 +68,32 @@ class TestWorkFlow(unittest.TestCase):
             self.output_dir,
             self.csv_dir,
             cores=2,
-            threads=os.cpu_count()
+            threads=os.cpu_count(),
+            error_dir=self.error_dir,
         )
-        
+        os.remove(sra_file)
+
+    def test_error_tolerance(self):
+        sra_id = "SRR16026846"
+        sra_file = os.path.join(DATA_DIR, f"{sra_id}.sra")
+        if not os.path.exists(sra_file):
+            prefetch = PrefetchWrapper(sra_id, DATA_DIR)
+            prefetch.execute_cmd()
+
+        ARTIC_PE.run_workflow(
+            refSeq_file=self.refSeq_file,
+            primer_file=self.primer_file,
+            amplicon_info_file=self.amplicon_info_file,
+            sra_files=[sra_file],
+            output_dir=self.output_dir,
+            csv_dir=self.csv_dir,
+            cores=2,
+            threads=os.cpu_count(),
+            error_dir=self.error_dir,
+            max_errors=1
+        )
+        for fn in glob.glob(os.path.join(DATA_DIR, "_*")):
+            os.remove(fn)
         os.remove(sra_file)
 
     def tearDown(self):

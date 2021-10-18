@@ -1,16 +1,11 @@
 import os
+import re
+import sys
 
 from sra2variant.pipeline.cmd_wrapper import (
     _FileArtifacts,
     CMDwrapperBase,
 )
-
-
-"""
-gatk CreateSequenceDictionary -R NC_045512.2.fasta
-gatk AddOrReplaceReadGroups I=SRR15432222.sort.bam O=SRR15432222_with_RG.sort.bam RGID=4 RGLB=lib1 RGPL=illumina RGSM=1 RGPU=unit1 CREATE_INDEX=True
-gatk HaplotypeCaller -R NC_045512.2.fasta -I SRR15432222.sort.bam -O SRR15432222.vcf -ERC GVCF -ploidy 1
-"""
 
 
 class LoFreqFaidxWrapper(CMDwrapperBase):
@@ -188,7 +183,7 @@ class IvarGetMaskedWrapper(CMDwrapperBase):
     exec_name = "ivar getmasked"
     primer_bed_file: _FileArtifacts = None
     amplicon_info_file: _FileArtifacts = None
-    
+
     def __init__(self, input_files: _FileArtifacts, *args: str) -> None:
         (vcf_file, ) = input_files.path_from_cwd()
         (bed_file, ) = self.primer_bed_file.file_path
@@ -286,6 +281,163 @@ class VCFintersectWrapper(CMDwrapperBase):
         (vcf_file, ) = self.output_files.file_path
         with open(vcf_file, "w") as f:
             f.writelines(self.stdout)
+
+
+def sanitize_bed(primer_bed_file: _FileArtifacts) -> None:
+    # This function is a direct copy from:
+    # https://github.com/galaxyproject/tools-iuc/tree/master/tools/ivar/
+    (bed_file, ) = primer_bed_file.file_path
+    with open(bed_file) as i:
+        bed_data = i.readlines()
+
+    res = primer_bed_file.coupled_files(
+        ".bed",
+        exec_name="sanitize_bed"
+    )
+    (sanitize_bed_file, ) = res.file_path
+    sanitized_data = []
+    try:
+        for record in bed_data:
+            fields = record.split('\t')
+            sanitized_data.append(
+                '\t'.join(fields[:4] + ['60'] + fields[5:])
+            )
+    except IndexError:
+        pass  # leave column number issue to getmasked
+    else:
+        with open(sanitize_bed_file, 'w') as o:
+            o.writelines(sanitized_data)
+    return res
+
+
+def prepare_amplicon_info(
+    primer_bed_file: _FileArtifacts,
+    amplicon_info_file: _FileArtifacts,
+) -> _FileArtifacts:
+    # This function is a direct copy from:
+    # https://github.com/galaxyproject/tools-iuc/tree/master/tools/ivar/
+    (bed_file, ) = primer_bed_file.file_path
+    primer_starts = {}
+    with open(bed_file) as i:
+        for line in i:
+            f = line.strip().split('\t')
+            try:
+                if f[5] == '+':
+                    primer_starts[f[3]] = int(f[1])
+                elif f[5] == '-':
+                    primer_starts[f[3]] = int(f[2]) - 1
+                else:
+                    raise ValueError()
+            except (IndexError, ValueError):
+                sys.exit(
+                    'Primer BED file needs to be TAB-separated with the '
+                    'following columns: '
+                    'chrom, chromStart, chromEnd, name, score, strand, '
+                    'where "chromStart", "chromEnd" need to be integer values '
+                    'and "strand" needs to be either "+" or "-".'
+                )
+    (info_file, ) = amplicon_info_file.file_path
+    with open(info_file) as i:
+        ret_lines = []
+        for line in i:
+            first = last = None
+            for pname in line.strip().split('\t'):
+                try:
+                    primer_start = primer_starts[pname]
+                except KeyError:
+                    sys.exit(
+                        'Amplicon info with primer name not found in '
+                        f'primer BED file: "{pname}"'
+                    )
+                if first is None or primer_start < primer_starts[first]:
+                    first = pname
+                if last is None or primer_start > primer_starts[last]:
+                    last = pname
+            if first == last:
+                sys.exit(
+                    line
+                    + 'is not a proper amplicon info line.'
+                )
+            ret_lines.append(f'{first}\t{last}\n')
+    res = amplicon_info_file.coupled_files(
+        ".tsv",
+        exec_name="prepare_amplicon_info"
+    )
+    (res_file, ) = res.file_path
+    with open(res_file, "w") as o:
+        o.writelines(ret_lines)
+    return res
+
+
+def write_amplicon_info_file(primer_bed_file: _FileArtifacts) -> _FileArtifacts:
+    # This function is a direct copy from:
+    # https://github.com/galaxyproject/tools-iuc/tree/master/tools/ivar/
+    AMPLICON_PAT = re.compile(
+        r'.*_(?P<num>\d+).*_(?P<name>L(?:EFT)?|R(?:IGHT)?)'
+    )
+    (primer_file, ) = primer_bed_file.file_path
+    with open(primer_file) as bed_file:
+        amplicon_sets = {}
+        for line in bed_file:
+            fields = line.strip().split('\t')
+            start = int(fields[1])
+            name = fields[3]
+            re_match = AMPLICON_PAT.match(name)
+            if re_match is None:
+                raise ValueError(
+                    f'{name} does not match expected amplicon name format'
+                )
+            amplicon_id = int(re_match.group('num'))
+            amplicon_set = amplicon_sets.get(amplicon_id, [])
+            amplicon_set.append((name, start))
+            amplicon_sets[amplicon_id] = amplicon_set
+
+    # write amplicons sorted by number with primers sorted by start position
+    res = primer_bed_file.coupled_files(
+        ".tsv",
+        exec_name="write_amplicon_info_file"
+    )
+    (tsv_file, ) = res.file_path
+    with open(tsv_file, "w") as amplicon_info_file:
+        for id in sorted(amplicon_sets):
+            amplicon_info = '\t'.join(
+                [name for name, start in sorted(
+                    amplicon_sets[id], key=lambda x: x[1]
+                )]
+            ) + '\n'
+            amplicon_info_file.write(amplicon_info)
+    return res
+
+
+def completemask(ivar_getmasked: IvarGetMaskedWrapper) -> _FileArtifacts:
+    # This function is a direct copy from:
+    # https://github.com/galaxyproject/tools-iuc/tree/master/tools/ivar/
+    (masked_primers_file, ) = ivar_getmasked.output_files.file_path
+    with open(masked_primers_file) as i:
+        getmasked_output = i.readline().strip()
+
+    (tsv_file, ) = ivar_getmasked.amplicon_info_file.file_path
+    if not getmasked_output:
+        pass
+        # print()
+        # print('No affected primer binding sites found!')
+    else:
+        masked_primers = getmasked_output.split('\t')
+        with open(tsv_file) as i:
+            amplicon_data = [line.strip().split('\t') for line in i]
+
+        masked_complete = []
+        for primer in masked_primers:
+            for amplicon in amplicon_data:
+                if primer in amplicon:
+                    masked_complete += amplicon
+        result = '\t'.join(sorted(set(masked_complete)))
+        # print()
+        # print('Removing reads primed with any of:')
+        # print(result)
+        with open(masked_primers_file, 'w') as o:
+            o.write(result + '\n')
+    return ivar_getmasked.output_files
 
 
 class BCFtoolsMpileupWrapper(CMDwrapperBase):
