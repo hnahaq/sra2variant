@@ -21,5 +21,4 @@ jobs:
       - name: Install sra2variant
         run: pip install -e .
       - name: Test with unittest
-        run: |
-          python ./tests/test_workflow.py
+        run: python -m unittest
