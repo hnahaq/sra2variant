@@ -33,7 +33,7 @@ class TestVCFparser(unittest.TestCase):
                 cwd=cwd,
                 res_dir=TEMP_DIR
             )
-            self.assertRaises(AmbiguousSNPcombination, vcf2csv, vcf_file)
+            self.assertWarns(AmbiguousSNPcombination, vcf2csv, vcf_file)
 
     def tearDown(self):
         if os.path.exists(TEMP_DIR):

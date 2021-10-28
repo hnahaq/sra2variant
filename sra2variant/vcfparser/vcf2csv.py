@@ -30,8 +30,8 @@ def resolve_MNV(temp_records: dict) -> list:
         j = 0
         while j < len(temp_records) - 1:
             if len(temp_records[j]) < len(temp_records[j + 1]):
-                temp_records[j], temp_records[j +
-                                              1] = temp_records[j + 1], temp_records[j]
+                (temp_records[j], temp_records[j + 1]
+                 ) = (temp_records[j + 1], temp_records[j])
                 sort_i[j], sort_i[j + 1] = sort_i[j + 1], sort_i[j]
             j += 1
 
@@ -41,8 +41,8 @@ def resolve_MNV(temp_records: dict) -> list:
         while k < len(temp_records) - 1:
             if (temp_records[k][0]["Frequency"] < temp_records[k + 1][0]["Frequency"] and
                     len(temp_records[k]) == len(temp_records[k + 1])):
-                temp_records[k], temp_records[k +
-                                              1] = temp_records[k + 1], temp_records[k]
+                (temp_records[k], temp_records[k + 1]
+                 ) = (temp_records[k + 1], temp_records[k])
                 sort_i[k], sort_i[k + 1] = sort_i[k + 1], sort_i[k]
                 swap_flag1 = True
             k += 1
@@ -75,10 +75,16 @@ def resolve_MNV(temp_records: dict) -> list:
 
             for ref_rec_index in range(compare_start, compare_end):
                 if ref_rec_index >= len(res):
-                    raise AmbiguousSNPcombination(
-                        "The positions have ambiguous SNP combination",
-                        positions
-                    )
+                    from warnings import warn
+                    warn(f"Unable to combine {positions} because of ambiguity",
+                         AmbiguousSNPcombination)
+                    original_records = list(range(len(sort_i)))
+                    for n, i in enumerate(sort_i):
+                        original_records[i] = temp_records[n]
+                    res = []
+                    for records in original_records:
+                        res.extend(records)
+                    return res
                 if type(res[ref_rec_index]["Reference Position"]) is int:
                     res[ref_rec_index]["Reference Position"] = [
                         res[ref_rec_index]["Reference Position"],
@@ -102,6 +108,17 @@ def resolve_MNV(temp_records: dict) -> list:
         if (type(ref_rec["Reference Position"]) is int):
             continue
         else:
+            if len(sort_i) > len(ref_rec["Reference"]):
+                from warnings import warn
+                warn(f"Unable to combine {positions} because of ambiguity",
+                     AmbiguousSNPcombination)
+                original_records = list(range(len(sort_i)))
+                for n, i in enumerate(sort_i):
+                    original_records[i] = temp_records[n]
+                res = []
+                for records in original_records:
+                    res.extend(records)
+                return res
             ref_rec["Reference Position"] = min(ref_rec["Reference Position"])
             ref_rec["Reference"] = "".join(
                 ref_rec["Reference"][i] for i in sort_i)
@@ -182,5 +199,5 @@ def vcf2csv(vcf_files: _FileArtifacts) -> None:
     vcf_files._write_result(res)
 
 
-class AmbiguousSNPcombination(ValueError):
+class AmbiguousSNPcombination(RuntimeWarning):
     pass
