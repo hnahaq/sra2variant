@@ -17,4 +17,4 @@ dependencies:
   - pyvcf
   - git
   - pip:
-    - git+https://github.com/wuaipinglab/sra2variant.git
+    - git+https://gitee.com/wuaipinglab/sra2variant.git
