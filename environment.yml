@@ -8,17 +8,13 @@ dependencies:
   - trimmomatic
   - fastp
   - bwa
-  - bowtie2
-  - hisat2
   - picard
   - ivar
   - vcflib
   - lofreq
-  - bcftools
   - python>=3.7
   - pip
   - pyvcf
-  - pysam
   - git
   - pip:
-    - git+https://github.com/wuaipinglab/sra2variant.git
+    - git+http://github.com/wuaipinglab/sra2variant.git
