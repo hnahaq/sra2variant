@@ -12,6 +12,12 @@ conda env update --file https://raw.githubusercontent.com/wuaipinglab/sra2varian
 conda activate sra2variant
 ```
 
+If the above doesn't work because of the network issue, try
+```
+conda env update --file https://raw.githubusercontent.com/wuaipinglab/sra2variant/main/environment2.yml
+conda activate sra2variant
+```
+
 ## Quickstart
 
 ### WGS PE
