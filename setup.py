@@ -17,6 +17,7 @@ setup(
             "sra2variant-WGS-PE = sra2variant.WGS_PE:main",
             "fastq2variant-WGS-PE = sra2variant.WGS_PE:main_fastq",
             "sra2variant-ARTIC-PE = sra2variant.ARTIC_PE:main",
+            "fastq2variant-ARTIC-PE = sra2variant.ARTIC_PE:main_fastq",
         ]
     },
     zip_safe=False,
