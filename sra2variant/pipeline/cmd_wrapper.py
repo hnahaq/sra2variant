@@ -2,7 +2,7 @@ import os
 import shutil
 import subprocess
 import csv
-import datetime
+import logging
 from abc import ABC, abstractmethod
 
 
@@ -83,14 +83,16 @@ class _FileArtifacts:
             res_dir=self.res_dir
         )
 
-    def create_cwd(self) -> None:
+    def create_cwd(self) -> bool:
+        if os.path.exists(self.result_file()):
+            logging.warning(
+                f"{self.workding_id} result already existed in {self.result_file()}")
+            return False
         if os.path.exists(self.cwd):
-            print(f"Delete existing {self.cwd}")
+            logging.warning(f"{self.workding_id} delete existing {self.cwd}")
             shutil.rmtree(self.cwd)
         os.makedirs(self.cwd)
-
-    def result_exists(self) -> bool:
-        return os.path.exists(self.result_file())
+        return True
 
     def result_file(self) -> None:
         return os.path.join(self.res_dir, f"{self.workding_id}.csv")
@@ -145,8 +147,7 @@ class CMDwrapperBase(ABC):
         cls.threads = str(threads)
 
     def execute_cmd(self) -> _FileArtifacts:
-        print(f"[{datetime.datetime.now()}]:",
-              self.input_files.workding_id, self.exec_name)
+        logging.info(f"{self.input_files.workding_id} {self.exec_name}")
         with subprocess.Popen(
             self.cmd,
             text=True,

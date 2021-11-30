@@ -50,7 +50,7 @@ class PrefetchWrapper(CMDwrapperBase):
             cwd=working_dir,
             working_id=sra_id,
         )
-        input_files = _FileArtifacts(".", cwd=working_dir)
+        input_files = _FileArtifacts(working_id=sra_id, cwd=working_dir)
         super().__init__(
             input_files,
             *args,

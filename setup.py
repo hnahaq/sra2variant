@@ -15,6 +15,7 @@ setup(
     entry_points={
         "console_scripts": [
             "sra2variant-WGS-PE = sra2variant.WGS_PE:main",
+            "fastq2variant-WGS-PE = sra2variant.WGS_PE:main_fastq",
             "sra2variant-ARTIC-PE = sra2variant.ARTIC_PE:main",
         ]
     },

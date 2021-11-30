@@ -1,5 +1,6 @@
 import os
 import sys
+import logging
 from multiprocessing import Pool
 
 from sra2variant.pipeline.cmd_wrapper import _FileArtifacts, CMDwrapperBase
@@ -32,7 +33,11 @@ from sra2variant.pipeline.variant_calling import (
 from sra2variant.vcfparser.vcf2csv import vcf2csv
 from sra2variant.sra2variant_cmd import (
     common_flags,
-    common_check,
+    artic_flags,
+    sra_flags,
+    check_common_flags,
+    check_artic_flags,
+    check_sra_flags,
     init_sra_file,
     ErrorTolerance,
 )
@@ -87,14 +92,13 @@ def run_workflow(
     LoFreqFaidxWrapper(fasta_file).execute_cmd()
 
     CMDwrapperBase.set_threads(threads)
+    ErrorTolerance.set_max_errors(max_errors)
     BWAmemWrapper.set_base_index(bwa_index)
 
     with Pool(cores) as p:
-        p.starmap(
-            func=__workflow,
-            iterable=((fn, output_dir, csv_dir, error_dir, max_errors)
-                      for fn in sra_files)
-        )
+        p.starmap(func=__workflow,
+                  iterable=((fn, output_dir, csv_dir, error_dir)
+                            for fn in sra_files))
 
 
 def __workflow(
@@ -102,22 +106,19 @@ def __workflow(
     output_dir: str,
     csv_dir: str,
     error_dir: str,
-    max_errors: int,
 ) -> None:
     sra_file: _FileArtifacts = init_sra_file(
         sra_file,
         output_dir,
         csv_dir
     )
-    if sra_file.result_exists():
-        print(f"Result for {sra_file} exists in {sra_file.result_file()}")
+    if not sra_file.create_cwd():
         return None
-    sra_file.create_cwd()
     task_log_file = sra_file.log_file()
     try:
         fastq_files = FastqDumpWrapper(sra_file).execute_cmd()
         if len(fastq_files) != 2:
-            print(f"{sra_file} doesn't contain paired end reads")
+            logging.warning(f"{sra_file} doesn't contain paired end reads")
             return None
         fastq_files = FastpWrapper(
             fastq_files,
@@ -236,20 +237,24 @@ def __workflow(
         ).execute_cmd()
         vcf2csv(vcf_files)
     except Exception as e:
-        error_tolerance = ErrorTolerance(error_dir, max_errors)
-        error_tolerance.handle(e, task_log_file)
+        error_tolerance = ErrorTolerance(error_dir, task_log_file)
+        error_tolerance.handle(e)
 
 
 def main(sysargs=sys.argv[1:]):
     parser = common_flags("ARTIC PE pipeline")
-    parser.add_argument("-p", "--primers", required=True,
-                        help="ARTIC primer bed files")
-    parser.add_argument("-a", "--amplicon", required=True,
-                        help="ARTIC primers to amplicon assignments")
-    params, args = common_check(sysargs, parser)
+    parser = artic_flags(parser)
+    parser = sra_flags(parser)
 
-    run_workflow(
-        primer_file=args.primers,
-        amplicon_info_file=args.amplicon,
-        **params
-    )
+    params, args = check_common_flags(sysargs, parser)
+    params = check_artic_flags(args, params)
+    params = check_sra_flags(args, params)
+
+    run_workflow(**params)
+
+# def main_fastq(sysargs=sys.argv[1:]):
+#     parser = common_flags("ARTIC PE pipeline")
+#     parser.add_argument("-p", "--primers", required=True,
+#                         help="ARTIC primer bed files")
+#     parser.add_argument("-a", "--amplicon", required=True,
+#                         help="ARTIC primers to amplicon assignments")
