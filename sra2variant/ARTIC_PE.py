@@ -1,10 +1,9 @@
-import os
 import pathlib
 import sys
 import logging
 from multiprocessing import Pool
 
-from sra2variant.pipeline.cmd_wrapper import _FileArtifacts, CMDwrapperBase
+from sra2variant.pipeline.cmd_wrapper import CMDwrapperBase, ErrorTolerance
 from sra2variant.pipeline.sra2fastq import FastqDumpWrapper
 from sra2variant.pipeline.fastq_trim import FastpWrapper
 from sra2variant.pipeline.reads_mapping import (
@@ -31,19 +30,24 @@ from sra2variant.pipeline.variant_calling import (
     write_amplicon_info_file,
     completemask,
 )
+from sra2variant.artifacts.base_file import _FileArtifacts
+from sra2variant.artifacts.fasta_file import init_fasta_file
+from sra2variant.artifacts.bed_file import init_bed_file
+from sra2variant.artifacts.tsv_file import init_tsv_file
+from sra2variant.artifacts.sra_file import init_sra_file
+from sra2variant.artifacts.fastq_file import init_fastq_pair
 from sra2variant.vcfparser.vcf2csv import vcf2csv
-from sra2variant.sra2variant_cmd import (
-    common_flags,
-    artic_flags,
-    sra_flags,
-    fastq_flags,
+from sra2variant.cmdutils.parser_checker import (
     check_common_flags,
     check_artic_flags,
     check_sra_flags,
     check_fastq_flags,
-    init_sra_file,
-    init_fastq_pair,
-    ErrorTolerance,
+)
+from sra2variant.cmdutils.parser_maker import (
+    common_flags,
+    artic_flags,
+    sra_flags,
+    fastq_flags,
 )
 
 
@@ -55,26 +59,9 @@ def prep_workflow(**params) -> None:
     threads: int = params["threads"]
     max_errors: int = params["max_errors"]
 
-    fasta_file = _FileArtifacts(
-        refSeq_file,
-        cwd=os.path.dirname(refSeq_file),
-        working_id=os.path.basename(refSeq_file)
-    )
-    if not fasta_file.exist():
-        raise FileNotFoundError(f"Reference genome {refSeq_file} not found")
-    bed_file = _FileArtifacts(
-        primer_file,
-        cwd=os.path.dirname(primer_file),
-    )
-    if not bed_file.exist():
-        raise FileNotFoundError(f"Primer file {primer_file} not found")
-
-    tsv_file = _FileArtifacts(
-        amplicon_info_file,
-        cwd=os.path.dirname(amplicon_info_file)
-    )
-    if not tsv_file.exist():
-        raise FileNotFoundError(f"Primer file {amplicon_info_file} not found")
+    fasta_file = init_fasta_file(refSeq_file)
+    bed_file = init_bed_file(primer_file)
+    tsv_file = init_tsv_file(amplicon_info_file)
 
     bed_file = sanitize_bed(bed_file)
     tsv_file_2 = prepare_amplicon_info(bed_file, tsv_file)

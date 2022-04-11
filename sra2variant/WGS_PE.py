@@ -1,10 +1,9 @@
-import os
 import pathlib
 import sys
 import logging
 from multiprocessing import Pool
 
-from sra2variant.pipeline.cmd_wrapper import _FileArtifacts, CMDwrapperBase
+from sra2variant.pipeline.cmd_wrapper import CMDwrapperBase, ErrorTolerance
 from sra2variant.pipeline.sra2fastq import FastqDumpWrapper
 from sra2variant.pipeline.fastq_trim import FastpWrapper
 from sra2variant.pipeline.reads_mapping import (
@@ -24,17 +23,20 @@ from sra2variant.pipeline.variant_calling import (
     LoFreqCallWrapper,
     LoFreqFilterWrapper
 )
+from sra2variant.artifacts.base_file import _FileArtifacts
+from sra2variant.artifacts.fasta_file import init_fasta_file
+from sra2variant.artifacts.sra_file import init_sra_file
+from sra2variant.artifacts.fastq_file import init_fastq_pair
 from sra2variant.vcfparser.vcf2csv import vcf2csv
-from sra2variant.sra2variant_cmd import (
+from sra2variant.cmdutils.parser_maker import (
     common_flags,
     sra_flags,
     fastq_flags,
+)
+from sra2variant.cmdutils.parser_checker import (
     check_common_flags,
     check_sra_flags,
     check_fastq_flags,
-    init_sra_file,
-    init_fastq_pair,
-    ErrorTolerance,
 )
 
 
@@ -43,13 +45,7 @@ def prep_workflow(
     threads: int,
     max_errors: int = 0,
 ):
-    fasta_file = _FileArtifacts(
-        refSeq_file,
-        cwd=os.path.dirname(refSeq_file),
-        working_id=os.path.basename(refSeq_file)
-    )
-    if not fasta_file.exist():
-        raise FileNotFoundError(f"Reference genome {refSeq_file} not found")
+    fasta_file = init_fasta_file(refSeq_file)
     bwa_index = BWAindexWrapper(fasta_file)
     LoFreqFaidxWrapper(fasta_file).execute_cmd()
 
