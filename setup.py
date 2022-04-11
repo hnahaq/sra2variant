@@ -9,7 +9,7 @@ setup(
     packages=find_packages(),
     python_requires='>=3.7',
     install_requires=["pyvcf"],
-    url="https://github.com/wuaipinglab/ncov_sequencing_variant",
+    url="https://github.com/wuaipinglab/sra2variant",
     author="Chengyang Ji",
     author_email="chengyang.ji12@alumni.xjtlu.edu.cn",
     entry_points={
@@ -18,6 +18,7 @@ setup(
             "fastq2variant-WGS-PE = sra2variant.WGS_PE:main_fastq",
             "sra2variant-ARTIC-PE = sra2variant.ARTIC_PE:main",
             "fastq2variant-ARTIC-PE = sra2variant.ARTIC_PE:main_fastq",
+            "vcf2csv = sra2variant.VCF2CSV:main",
         ]
     },
     zip_safe=False,
