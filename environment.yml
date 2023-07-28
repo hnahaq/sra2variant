@@ -11,11 +11,11 @@ dependencies:
   - openjdk>=10.0.0, <11.0.0
   - picard
   - ivar
-  - vcflib
+  - vcflib=1.0.3
   - lofreq
   - python>=3.7
   - pip
   - pyvcf
   - git
   - pip:
-    - git+https://github.com/wuaipinglab/sra2variant.git
+    - git+https://github.com/hnahaq/sra2variant.git
