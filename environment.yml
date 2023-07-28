@@ -12,6 +12,7 @@ dependencies:
   - picard
   - ivar
   - vcflib=1.0.3
+  - tabixpp=1.1.0
   - lofreq
   - python>=3.7
   - pip
