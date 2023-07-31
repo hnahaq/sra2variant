@@ -8,13 +8,13 @@
 Use the following command to install and activate the environment
 
 ```bash
-conda env update --file https://raw.githubusercontent.com/wuaipinglab/sra2variant/main/environment.yml
+conda env update --file https://raw.githubusercontent.com/hnahaq/sra2variant/main/environment.yml
 conda activate sra2variant
 ```
 
 If the above doesn't work because of the network issue, try
 ```
-conda env update --file https://raw.githubusercontent.com/wuaipinglab/sra2variant/main/environment2.yml
+conda env update --file https://raw.githubusercontent.com/hnahaq/sra2variant/main/environment2.yml
 conda activate sra2variant
 ```
 
@@ -25,7 +25,7 @@ conda activate sra2variant
 
 ```bash
 mkdir ./reference
-wget https://raw.githubusercontent.com/wuaipinglab/sra2variant/main/sra2variant/data/NC_045512.2.fasta
+wget https://raw.githubusercontent.com/hnahaq/sra2variant/main/sra2variant/data/NC_045512.2.fasta
 mv NC_045512.2.fasta ./reference
 ```
 
@@ -50,13 +50,13 @@ sra2variant-WGS-PE -r ./reference/NC_045512.2.fasta -i ./wgs_reads
 ```bash
 mkdir ./reference
 
-wget https://raw.githubusercontent.com/wuaipinglab/sra2variant/main/sra2variant/data/NC_045512.2.fasta
+wget https://raw.githubusercontent.com/hnahaq/sra2variant/main/sra2variant/data/NC_045512.2.fasta
 mv NC_045512.2.fasta ./reference
 
-wget https://raw.githubusercontent.com/wuaipinglab/sra2variant/main/sra2variant/data/ARTIC_nCoV-2019_v3.bed
+wget https://raw.githubusercontent.com/hnahaq/sra2variant/main/sra2variant/data/ARTIC_nCoV-2019_v3.bed
 mv ARTIC_nCoV-2019_v3.bed ./reference
 
-wget https://raw.githubusercontent.com/wuaipinglab/sra2variant/main/sra2variant/data/ARTIC_amplicon_info_v3.tsv
+wget https://raw.githubusercontent.com/hnahaq/sra2variant/main/sra2variant/data/ARTIC_amplicon_info_v3.tsv
 mv ARTIC_amplicon_info_v3.tsv ./reference
 ```
 
