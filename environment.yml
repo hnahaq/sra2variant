@@ -4,19 +4,19 @@ channels:
   - bioconda
   - defaults
 dependencies:
-  - sra-tools
-  - trimmomatic
-  - fastp
-  - bwa
+  - sra-tools=3.0.5
+  - trimmomatic=0.39
+  - fastp=0.23.4
+  - bwa=0.7.17
   - openjdk=20.0.0
-  - picard
-  - ivar
+  - picard=3.0.0
+  - ivar=1.4.2
   - vcflib=1.0.3
   - tabixpp=1.1.0
-  - lofreq
+  - lofreq=2.1.5
   - python>=3.7
-  - pip
-  - pyvcf
-  - git
+  - pip=23.2.1
+  - pyvcf=0.6.8
+  - git=2.41.0
   - pip:
     - git+https://github.com/hnahaq/sra2variant.git
