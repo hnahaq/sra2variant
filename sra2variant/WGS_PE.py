@@ -70,9 +70,10 @@ def workflow_from_sra(
         if not sra_file.create_cwd():
             return None
         fastq_files = FastqDumpWrapper(sra_file).execute_cmd()
-        if len(fastq_files) != 2:
-            logging.warning(f"{sra_file} doesn't contain paired end reads")
-            return None
+        # line 74-76 repaired by hanna,2023/7/28
+        # if len(fastq_files) != 2:
+            # logging.warning(f"{sra_file} doesn't contain paired end reads")
+            # return None
         __workflow(fastq_files)
     except Exception as e:
         error_tolerance = ErrorTolerance(error_dir, task_log_file)
@@ -105,10 +106,20 @@ def workflow_from_fastq(
 
 
 def __workflow(fastq_files: _FileArtifacts) -> None:
-    fastq_files = FastpWrapper(
-        fastq_files,
-        "--detect_adapter_for_pe"
-    ).execute_cmd()
+    # line 110-122 repaired by hanna,2023/7/28
+    # fastq_files = FastpWrapper(
+        # fastq_files,
+        # "--detect_adapter_for_pe"
+    # ).execute_cmd()
+    if len(fastq_files) == 1:
+        fastq_files = FastpWrapper(
+            fastq_files,
+        ).execute_cmd()
+    elif len(fastq_files) == 2:
+        fastq_files = FastpWrapper(
+            fastq_files,
+            "--detect_adapter_for_pe"
+        ).execute_cmd()
     sam_files = BWAmemWrapper(fastq_files).execute_cmd()
     refSeq_file = BWAmemWrapper.bwa_index.output_files
 
